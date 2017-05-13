@@ -1259,154 +1259,140 @@ visensor_imudata visensor_get_leftImg(char* left_img)
 	return bind_imuData;
     }
 }
-visensor_imudata visensor_get_leftImg(char* left_img,timeval &left_stamp)
+visensor_imudata visensor_get_leftImg(char* left_img, timeval &left_stamp)
 {
-
-	while(!visensor_is_left_good())usleep(200);
+	while(!visensor_is_left_good())
+		usleep(200);
 
     int img1_pointer = (gFrameCam1 + FRAME_CLUST - 1) % FRAME_CLUST;
-    if(gImg1Pass[img1_pointer]&&(!visensor_resolution_status))
-    {
+    if(gImg1Pass[img1_pointer]&&(!visensor_resolution_status)){
         memcpy(left_img,(char *)(gImg1_VGA[img1_pointer]),IMG_BUF_SIZE_VGA);
-        left_stamp=gImg1_SysTime[img1_pointer];
-	gImg1Pass[img1_pointer]=0;
+        left_stamp = gImg1_SysTime[img1_pointer];
+		gImg1Pass[img1_pointer]=0;
 
-	// 绑定最近时间戳的IMU数据
-	int min_id=0;
-	int min_dist=10000;
-	for(int i=0;i<200;i++)
-	{
-		int imu_usec=IMU_FIFO[i].system_time.tv_usec;
-		if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-left_stamp.tv_usec))
-		{
-			min_dist=abs(imu_usec-left_stamp.tv_usec);
-			min_id=i;
+		// 绑定最近时间戳的IMU数据
+		int min_id=0;
+		int min_dist=10000;
+		for(int i=0; i<200; i++){
+			int imu_usec = IMU_FIFO[i].system_time.tv_usec;
+			if(IMU_FIFO[i].imu_time!=0 && min_dist>=abs(imu_usec-left_stamp.tv_usec)){
+				min_dist=abs(imu_usec - left_stamp.tv_usec);
+				min_id=i;
+			}
 		}
-	}
-	visensor_imudata bind_imuData=IMU_FIFO[min_id];
-	return bind_imuData;
-    }
-    else if(gImg1Pass[img1_pointer]&&(visensor_resolution_status))
-    {
+		
+		visensor_imudata bind_imuData = IMU_FIFO[min_id];
+		return bind_imuData;
+		
+    }else if(gImg1Pass[img1_pointer]&&(visensor_resolution_status)){
         memcpy(left_img,(char *)(gImg1_WVGA[img1_pointer]),IMG_BUF_SIZE_WVGA);
         left_stamp=gImg1_SysTime[img1_pointer];
-	gImg1Pass[img1_pointer]=0;
+		gImg1Pass[img1_pointer]=0;
 
-	// 绑定最近时间戳的IMU数据
-	int min_id=0;
-	int min_dist=10000;
-	for(int i=0;i<200;i++)
-	{
-		int imu_usec=IMU_FIFO[i].system_time.tv_usec;
-		if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-left_stamp.tv_usec))
-		{
-			min_dist=abs(imu_usec-left_stamp.tv_usec);
-			min_id=i;
+		// 绑定最近时间戳的IMU数据
+		int min_id=0;
+		int min_dist=10000;
+		for(int i=0; i<200; i++){
+			int imu_usec=IMU_FIFO[i].system_time.tv_usec;
+			if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-left_stamp.tv_usec)){
+				min_dist=abs(imu_usec-left_stamp.tv_usec);
+				min_id=i;
+			}
 		}
-	}
-	visensor_imudata bind_imuData=IMU_FIFO[min_id];
-	return bind_imuData;
+		visensor_imudata bind_imuData = IMU_FIFO[min_id];
+		return bind_imuData;
     }
 }
 
 visensor_imudata visensor_get_rightImg(char* right_img)
 {
 
-	while(!visensor_is_right_good())usleep(200);
+	while(!visensor_is_right_good())
+		usleep(200);
 
     int img2_pointer = (gFrameCam2 + FRAME_CLUST - 1) % FRAME_CLUST;
 
-    if(gImg2Pass[img2_pointer]&&(!visensor_resolution_status))
-    {
+    if(gImg2Pass[img2_pointer]&&(!visensor_resolution_status)){
         memcpy(right_img,(char *)(gImg2_VGA[img2_pointer]),IMG_BUF_SIZE_VGA);
-	gImg2Pass[img2_pointer]=0;
+		gImg2Pass[img2_pointer]=0;
 
-	// 绑定最近时间戳的IMU数据
-	timeval right_stamp=gImg2_SysTime[img2_pointer];
-	int min_id=0;
-	int min_dist=10000;
-	for(int i=0;i<200;i++)
-	{
-		int imu_usec=IMU_FIFO[i].system_time.tv_usec;
-		if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-right_stamp.tv_usec))
-		{
-			min_dist=abs(imu_usec-right_stamp.tv_usec);
-			min_id=i;
+		// 绑定最近时间戳的IMU数据
+		timeval right_stamp=gImg2_SysTime[img2_pointer];
+		int min_id=0;
+		int min_dist=10000;
+		for(int i=0;i<200;i++){
+			int imu_usec=IMU_FIFO[i].system_time.tv_usec;
+			if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-right_stamp.tv_usec)){
+				min_dist=abs(imu_usec-right_stamp.tv_usec);
+				min_id=i;
+			}
 		}
-	}
-	visensor_imudata bind_imuData=IMU_FIFO[min_id];
-	return bind_imuData;
-    }
-    else if(gImg2Pass[img2_pointer]&&(visensor_resolution_status))
-    {
+		visensor_imudata bind_imuData=IMU_FIFO[min_id];
+		return bind_imuData;
+    }else if(gImg2Pass[img2_pointer]&&(visensor_resolution_status)){
         memcpy(right_img,(char *)(gImg2_WVGA[img2_pointer]),IMG_BUF_SIZE_WVGA);
-	gImg2Pass[img2_pointer]=0;
+		gImg2Pass[img2_pointer]=0;
 
-	// 绑定最近时间戳的IMU数据
-	timeval right_stamp=gImg2_SysTime[img2_pointer];
-	int min_id=0;
-	int min_dist=10000;
-	for(int i=0;i<200;i++)
-	{
-		int imu_usec=IMU_FIFO[i].system_time.tv_usec;
-		if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-right_stamp.tv_usec))
-		{
-			min_dist=abs(imu_usec-right_stamp.tv_usec);
-			min_id=i;
+		// 绑定最近时间戳的IMU数据
+		timeval right_stamp=gImg2_SysTime[img2_pointer];
+		int min_id=0;
+		int min_dist=10000;
+		for(int i=0;i<200;i++){
+			int imu_usec=IMU_FIFO[i].system_time.tv_usec;
+			if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-right_stamp.tv_usec)){
+				min_dist=abs(imu_usec-right_stamp.tv_usec);
+				min_id=i;
+			}
 		}
-	}
-	visensor_imudata bind_imuData=IMU_FIFO[min_id];
-	return bind_imuData;
+		visensor_imudata bind_imuData=IMU_FIFO[min_id];
+		return bind_imuData;
     }
 }
+
 visensor_imudata visensor_get_rightImg(char* right_img,timeval &right_stamp)
 {
 
-	while(!visensor_is_right_good())usleep(200);
+	while(!visensor_is_right_good())
+		usleep(200);
 
     int img2_pointer = (gFrameCam2 + FRAME_CLUST - 1) % FRAME_CLUST;
 
-    if(gImg2Pass[img2_pointer]&&(!visensor_resolution_status))
-    {
+    if(gImg2Pass[img2_pointer]&&(!visensor_resolution_status)){
         memcpy(right_img,(char *)(gImg2_VGA[img2_pointer]),IMG_BUF_SIZE_VGA);
         right_stamp=gImg2_SysTime[img2_pointer];
-	gImg2Pass[img2_pointer]=0;
+		gImg2Pass[img2_pointer]=0;
 
-	// 绑定最近时间戳的IMU数据
-	int min_id=0;
-	int min_dist=10000;
-	for(int i=0;i<200;i++)
-	{
-		int imu_usec=IMU_FIFO[i].system_time.tv_usec;
-		if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-right_stamp.tv_usec))
+		// 绑定最近时间戳的IMU数据
+		int min_id=0;
+		int min_dist=10000;
+		for(int i=0;i<200;i++)
 		{
-			min_dist=abs(imu_usec-right_stamp.tv_usec);
-			min_id=i;
+			int imu_usec=IMU_FIFO[i].system_time.tv_usec;
+			if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-right_stamp.tv_usec))
+			{
+				min_dist=abs(imu_usec-right_stamp.tv_usec);
+				min_id=i;
+			}
 		}
-	}
-	visensor_imudata bind_imuData=IMU_FIFO[min_id];
-	return bind_imuData;
-    }
-    else if(gImg2Pass[img2_pointer]&&(visensor_resolution_status))
-    {
+		visensor_imudata bind_imuData=IMU_FIFO[min_id];
+		return bind_imuData;
+    }else if(gImg2Pass[img2_pointer]&&(visensor_resolution_status)){
         memcpy(right_img,(char *)(gImg2_WVGA[img2_pointer]),IMG_BUF_SIZE_WVGA);
         right_stamp=gImg2_SysTime[img2_pointer];
-	gImg2Pass[img2_pointer]=0;
+		gImg2Pass[img2_pointer]=0;
 
-	// 绑定最近时间戳的IMU数据
-	int min_id=0;
-	int min_dist=10000;
-	for(int i=0;i<200;i++)
-	{
-		int imu_usec=IMU_FIFO[i].system_time.tv_usec;
-		if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-right_stamp.tv_usec))
-		{
-			min_dist=abs(imu_usec-right_stamp.tv_usec);
-			min_id=i;
+		// 绑定最近时间戳的IMU数据
+		int min_id=0;
+		int min_dist=10000;
+		for(int i=0;i<200;i++){
+			int imu_usec=IMU_FIFO[i].system_time.tv_usec;
+			if(IMU_FIFO[i].imu_time!=0&&min_dist>=abs(imu_usec-right_stamp.tv_usec)){
+				min_dist=abs(imu_usec-right_stamp.tv_usec);
+				min_id=i;
+			}
 		}
-	}
-	visensor_imudata bind_imuData=IMU_FIFO[min_id];
-	return bind_imuData;
+		visensor_imudata bind_imuData=IMU_FIFO[min_id];
+		return bind_imuData;
     }
 }
 

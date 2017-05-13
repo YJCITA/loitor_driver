@@ -318,7 +318,6 @@ timeval serial_frame_system_time_cur, serial_frame_system_time_pre;
 bool g_is_first_read_imu = true;
 bool g_is_read_imu_init_ok = false;
 int g_index_in_serial_frame = 0; // 在串口帧中（16个IMU数据）的IMU的序号
-int g_imu_num_pre_serial_frame = 0;  //上一帧serial来的时候数据
 
 int format_imu_systemtime(const unsigned char* imu_frame, float& imu_time, timeval& imu_system_time)
 {
@@ -327,7 +326,6 @@ int format_imu_systemtime(const unsigned char* imu_frame, float& imu_time, timev
 		imu_system_time_pre = imu_SysTime;
 		g_imu_num_pre = imu_num_cur;
 		g_is_first_read_imu = false;
-		g_imu_num_pre_serial_frame = imu_num_cur;
 	}
 	// 对IMU读取到的时间进行整定
 	if(!g_is_read_imu_init_ok){
@@ -343,13 +341,10 @@ int format_imu_systemtime(const unsigned char* imu_frame, float& imu_time, timev
 			}else{
 				serial_frame_system_time_cur.tv_usec = tmp_us;
 			}
-			
 			serial_frame_system_time_pre = imu_SysTime;
-			g_imu_num_pre_serial_frame = imu_num_cur;
 			g_is_read_imu_init_ok = true;
 		}
 		
-		imu_time = imu_time;
 		imu_system_time = imu_SysTime;
 	}else{
 		// 前后两次读到数据的时间差， 因为loitor端应该是通过串口按16帧IMU数据组成一个串口包，发出来
@@ -357,18 +352,8 @@ int format_imu_systemtime(const unsigned char* imu_frame, float& imu_time, timev
 		// 所以最后的：dt_max = 80ms - 0.5*16 = 72ms, 不过实际可能会波动
 		double dt_imu_t = (imu_SysTime.tv_sec - imu_system_time_pre.tv_sec)*1e3 + (imu_SysTime.tv_usec - imu_system_time_pre.tv_usec)/1e3;	
 		if(dt_imu_t > 60){
-			double dt_serial = (imu_SysTime.tv_sec - serial_frame_system_time_pre.tv_sec)*1e3 + (imu_SysTime.tv_usec - serial_frame_system_time_pre.tv_usec)/1e3;
-// 			printf("----------dt_serial: %f\n", dt_serial);
-			
-			int d_imu_num_serial_frame = imu_num_cur - g_imu_num_pre_serial_frame; // 当前serial帧中IMU的数量
-			if(d_imu_num_serial_frame < 0)
-				d_imu_num_serial_frame += 200;
-			
 			serial_frame_system_time_cur = serial_frame_system_time_pre;
-			
-			printf("------11111----d_imu_num_serial_frame: %d\n", d_imu_num_serial_frame);
 			g_index_in_serial_frame = 0;
-			g_imu_num_pre_serial_frame = imu_num_cur;
 			serial_frame_system_time_pre = imu_SysTime;
 		}
 		
@@ -376,9 +361,10 @@ int format_imu_systemtime(const unsigned char* imu_frame, float& imu_time, timev
 		int d_imu_num = imu_num_cur - g_imu_num_pre;
 		if(d_imu_num < 0)
 			d_imu_num += 200;
-// 		printf("----------d_imu_num: %d\n", d_imu_num);
-		g_index_in_serial_frame += d_imu_num; // 根据当前读到imu和上一次读到的imu的num的差值，确定跟上一个IMU的dt=d_NUM*T  其中T=5ms
-		printf("--1--g_index_in_serial_frame: %d\n", g_index_in_serial_frame);
+		
+		// 根据当前读到imu和上一次读到的imu的num的差值，确定跟上一个IMU的dt=d_NUM*T  其中T=5ms
+		g_index_in_serial_frame += d_imu_num; 
+// 		printf("--1--g_index_in_serial_frame: %d\n", g_index_in_serial_frame);
 		int tmp_us = serial_frame_system_time_cur.tv_usec + g_index_in_serial_frame*5000;
 		if(tmp_us >= 1e6){
 			imu_system_time_fix.tv_sec += 1;
@@ -386,8 +372,6 @@ int format_imu_systemtime(const unsigned char* imu_frame, float& imu_time, timev
 		}else{
 			imu_system_time_fix.tv_usec = tmp_us;
 		}
-		
-		imu_time = imu_time;
 		imu_system_time = imu_system_time_fix;
 	}
 	
