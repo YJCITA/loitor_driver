@@ -423,8 +423,6 @@ void visensor_load_settings(const char* settings_file)
     visensor_cam_selection=modes_settings[data_mode-1][0];
 
     /****************************************************************************/
-
-
     if(visensor_cam_selection==0)gSelectCam = 3;
     else if(visensor_cam_selection==2)gSelectCam = 1;
     else if(visensor_cam_selection==1)gSelectCam = 2;
@@ -1416,77 +1414,67 @@ int visensor_Start_Cameras()
 {
     gSelectCam = 3;
     allow_settings_change=false;
-
     shut_down_tag=false;
-
     int ret_val=0;
 
     DEBUGLOG("Now opening cameras...\r\n");
     //Open usb devices
     int r;
     r = cyusb_open();
-    if(r<1)
-    {
+    if(r<1){
         LOG("Error: No cameras found! r = %d\r\n",r);
         return -2;
-    }
-    else
-    {
+    }else{
         printf("Number of device of interest found: %d\r\n",r);
     }
     //Get camera position
     cyusb_handle *pusb_handle;
-    for(int i=0; i<r; i++)
-    {
+    for(int i=0; i<r; i++){
         unsigned char buf = 0;
         pusb_handle = cyusb_gethandle(i);
         int r_num = cyusb_control_transfer(pusb_handle,0xC0,GET_CAM_LR,0,0,&buf,1,1000);
-        if(r_num != 1)
-        {
+        if(r_num != 1){
             printf("Getting LR: %d error: i:0xA5,r:%d\r\n",i,r_num);
-        }
-        else
-        {
-            if(buf==0xF0)
-            {
+        }else{
+            if(buf==0xF0){
                 pcam1_handle = pusb_handle;
                 printf("Left camera found!\r\n");
-            }
-            else if(buf==0xF1)
-            {
+            }else if(buf==0xF1){
                 pcam2_handle = pusb_handle;
                 printf("Right camera found!\r\n");
             }
         }
     }
+    
     //Check cameras
-    if(gSelectCam&0x01)
-        if(pcam1_handle==NULL)
-        {
+    if(gSelectCam&0x01){
+        if(pcam1_handle==NULL){
             LOG("Error: Left camera was not found!\r\n");
             ret_val= -2;
         }
-    if(gSelectCam&0x02)
-        if(pcam2_handle==NULL)
-        {
+	}
+	
+    if(gSelectCam&0x02){
+        if(pcam2_handle==NULL){
             LOG("Error: Right camera was not found!\r\n");
             ret_val= -2;
         }
+	}
 
-    if(!(ret_val<0))
-    {
+    if(!(ret_val<0)){
         //Create capture thread
-        gettimeofday(&visensor_startTime,NULL);		// 初始化时间起点
+        gettimeofday(&visensor_startTime, NULL);		// 初始化时间起点
 
         int temp=0;
         if(gSelectCam&0x01)
             if(temp = pthread_create(&cam1_capture_thread, NULL, cam1_capture, NULL))
                 printf("Failed to create thread cam1_capture_thread\r\n");
+			
         if(gSelectCam&0x02)
             if(temp = pthread_create(&cam2_capture_thread, NULL, cam2_capture, NULL))
                 printf("Failed to create thread cam2_capture_thread\r\n");
+			
         usleep(1000);
-
         return ret_val;
     }
     else return 0;
@@ -1496,25 +1484,23 @@ void visensor_Close_Cameras()
     shut_down_tag=true;
     /* Waiting for Camera threads */
     if(cam1_capture_thread !=0)
-    {
         pthread_join(cam1_capture_thread,NULL);
-    }
-    if(cam2_capture_thread !=0)
-    {
+
+	if(cam2_capture_thread !=0)
         pthread_join(cam2_capture_thread,NULL);
-    }
-    cyusb_close();
+
+	cyusb_close();
 }
 
 // 检测有无新数据
 bool visensor_imu_have_fresh_data()
 {
-    if(visensor_query_imu_update())
-    {
+    if(visensor_query_imu_update()){
         visensor_erase_imu_update();
         return true;
-    }
-    else return false;
+    }else{ 
+		return false;
+	}
 }
 
 void visensor_Close_IMU()
@@ -1522,9 +1508,7 @@ void visensor_Close_IMU()
     imu_close=true;
     /* Waiting for imu_thread */
     if(imu_thread !=0)
-    {
         pthread_join(imu_thread,NULL);
-    }
 }
 void *imu_data_feed(void*)
 {
@@ -1535,39 +1519,18 @@ void *imu_data_feed(void*)
     short int setaccoffset[3] = {biasX,  biasY, biasZ};
 
 	// 在此函数中更新 IMU-FIFO 用于计算同步 VI-pair
+	for(int i=0; i<200; i++)
+		memset(&IMU_FIFO[i], 0, sizeof(IMU_FIFO[i]));
 
-    int counter=0;
-
-	for(int i=0;i<200;i++)
-	{
-		IMU_FIFO[i].imu_time=0;
-		IMU_FIFO[i].system_time.tv_usec=0;
-		IMU_FIFO[i].system_time.tv_sec=0;
-		IMU_FIFO[i].num=0;
-		IMU_FIFO[i].rx=0;
-		IMU_FIFO[i].ry=0;
-		IMU_FIFO[i].rz=0;
-		IMU_FIFO[i].ax=0;
-		IMU_FIFO[i].ay=0;
-		IMU_FIFO[i].az=0;
-		IMU_FIFO[i].qw=0;
-		IMU_FIFO[i].qx=0;
-		IMU_FIFO[i].qy=0;
-		IMU_FIFO[i].qz=0;
-	}
-
-    while(!imu_close)
-    {
-        if(visensor_get_imu_frame(imu_fd,imu_frame)==0)
-        {
-            visensor_get_imu_data(imu_frame,setaccoffset,&visensor_imudata_pack,false);
+    while(!imu_close){
+        if(visensor_get_imu_frame(imu_fd,imu_frame)==0){
+            visensor_get_imu_data(imu_frame, setaccoffset, &visensor_imudata_pack, false);
             // 将imu更新标记打开
             visensor_mark_imu_update();
-		
-		IMU_FIFO[imu_fifo_ct]=visensor_imudata_pack;
-
-		if(imu_fifo_ct<200)imu_fifo_ct++;
-		else imu_fifo_ct=0;
+			if(imu_fifo_ct<200)
+				imu_fifo_ct++;
+			else 
+				imu_fifo_ct = 0;
         }
         usleep(500);
     }
@@ -1581,20 +1544,19 @@ int visensor_Start_IMU()
 
     // serial port
     int fd=visensor_open_port(imu_port_name.c_str());
-    if(fd<0)
-    {
+    if(fd<0){
         printf("visensor_open_port error...\r\n");
         return 0;
-    }
-    printf("visensor_open_port success...\r\n");
+    }else{
+		printf("visensor_open_port success...\r\n");
+	}
 
-    if(visensor_set_opt(fd,115200,8,'N',1)<0)
-    {
+    if(visensor_set_opt(fd,115200,8,'N',1)<0){
         printf("visensor_set_opt error...\r\n");
         return 0;
-    }
-    printf("visensor_set_opt(fd,115200,8,'N',1) success...\r\n");
-
+    }else{
+		printf("visensor_set_opt(fd,115200,8,'N',1) success...\r\n");
+	}
 
     static unsigned char sendframe[10]= {0x55,0xAA,0x02};
     short int setaccoffset[3] = {biasX,  biasY, biasZ};
@@ -1604,7 +1566,6 @@ int visensor_Start_IMU()
 
     //Create imu_data thread
     imu_fd=fd;
-
     int temp;
     if(temp = pthread_create(&imu_thread, NULL, imu_data_feed, NULL))
         printf("Failed to create thread imu_data\r\n");

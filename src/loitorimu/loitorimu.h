@@ -28,4 +28,6 @@ int visensor_send_imu_frame(int fd, unsigned char* data, int len);
 int print_imu_datawithtime(int data_count, float* fgyr, float* facc, double timestamp, double camtimes, short int* acc_offset);
 int get_imu_datawithtime(int fd, int* data_count, float* gyr, float* acc, double* timestamp, double* camtimes);
 
+int format_imu_systemtime(const unsigned char* imu_frame, float& imu_time, timeval& imu_system_time);
+
 #endif

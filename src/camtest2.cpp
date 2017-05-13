@@ -2,14 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
-
 #include <cv.h>
 #include <highgui.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <math.h>
-
 #include <math.h>
 #include <assert.h>
 #include <string.h>
@@ -17,13 +15,11 @@
 #include <stdio.h>
 #include <limits.h>
 #include <float.h>
-
 #include<iostream>
 #include<algorithm>
 #include<fstream>
 #include<chrono>
 #include <thread>
-
 
 #include "loitorusbcam.h"
 #include "loitorimu.h"
@@ -42,52 +38,37 @@ void *opencv_showimg(void*)
 {
 	IplImage *cv_img1;
 	IplImage *cv_img2;
-	if(!visensor_resolution_status)
-	{
+	if(!visensor_resolution_status){
 		cv_img1=cvCreateImage(cvSize(IMG_WIDTH_VGA,IMG_HEIGHT_VGA),IPL_DEPTH_8U,1);
 		cv_img2=cvCreateImage(cvSize(IMG_WIDTH_VGA,IMG_HEIGHT_VGA),IPL_DEPTH_8U,1);
-	}
-	else
-	{
+	}else{
 		cv_img1=cvCreateImage(cvSize(IMG_WIDTH_WVGA,IMG_HEIGHT_WVGA),IPL_DEPTH_8U,1);
 		cv_img2=cvCreateImage(cvSize(IMG_WIDTH_WVGA,IMG_HEIGHT_WVGA),IPL_DEPTH_8U,1);
 	}
-	while(!close_img_viewer)
-	{
+	
+	while(!close_img_viewer){
 		usleep(1000);
 		//Cam1
-		if(visensor_cam_selection==2)
-		{
+		if(visensor_cam_selection==2){
 			visensor_imudata paired_imu=visensor_get_leftImg(cv_img1->imageData,left_stamp);
 
 			//cout<<"left_time : "<<left_stamp.tv_usec<<endl;
-			
 			//cout<<"paired_imu time ===== "<<paired_imu.system_time.tv_usec<<endl<<endl;
-
 			cvShowImage("Left",cv_img1);
 			cvWaitKey(1);
-		}
-		//Cam2
-		else if(visensor_cam_selection==1)
-		{
+		}else if(visensor_cam_selection==1){//Cam2
 			visensor_imudata paired_imu=visensor_get_rightImg(cv_img2->imageData,right_stamp);
 
 			//cout<<"right_time : "<<right_stamp.tv_usec<<endl;
-			
 			//cout<<"paired_imu time ===== "<<paired_imu.system_time.tv_usec<<endl<<endl;
-
 			cvShowImage("right",cv_img2);
 			cvWaitKey(1);
-		}
-		// Cam1 && Cam2
-		else if(visensor_cam_selection==0)
-		{
-			
-			visensor_imudata paired_imu=visensor_get_stereoImg(cv_img1->imageData,cv_img2->imageData,left_stamp,right_stamp);
+		}else if(visensor_cam_selection==0){
+			// Cam1 && Cam2
+			visensor_imudata paired_imu = visensor_get_stereoImg(cv_img1->imageData,cv_img2->imageData,left_stamp,right_stamp);
 
 			//cout<<"left_time : "<<left_stamp.tv_usec<<endl;
 			//cout<<"right_time : "<<right_stamp.tv_usec<<endl;
-			
 			//cout<<"paired_imu time ===== "<<paired_imu.system_time.tv_usec<<endl<<endl;
 
 			cvShowImage("Left",cv_img1);
@@ -101,21 +82,36 @@ void *opencv_showimg(void*)
 void* show_imuData(void *)
 {
 	int counter=0;
-	while(!visensor_Close_IMU_viewer)
-	{
-		if(visensor_imu_have_fresh_data())
-           	{
+	timeval time_pre;
+	float imu_time_pre = 0;
+	int imu_read_counter = 0;
+	int imu_num_pre = 0;
+	while(!visensor_Close_IMU_viewer){
+		if(visensor_imu_have_fresh_data()){
 			counter++;
-			// 每隔20帧显示一次imu数据
-			if(counter>=0)
-			{
+			// 每隔n帧显示一次imu数据
+			if(1){
 				float ax=visensor_imudata_pack.ax;
 				float ay=visensor_imudata_pack.ay;
 				float az=visensor_imudata_pack.az;
-				cout<<"visensor_imudata_pack->a : "<<sqrt(ax*ax+ay*ay+az*az)<<endl;
-				cout<<"visensor_imudata_pack->r : "<<visensor_imudata_pack.rx<<" , "<<visensor_imudata_pack.ry<<" , "<<visensor_imudata_pack.rz<<endl;
-				//cout<<"imu_time ======================= "<<visensor_imudata_pack.system_time.tv_usec<<endl;
-				counter=0;
+				timeval time_cur = visensor_imudata_pack.system_time;
+				double dt_imu = (time_cur.tv_sec - time_pre.tv_sec)*1e3 + (time_cur.tv_usec - time_pre.tv_usec)/1e3;	
+				printf("imu read num: %03d, dt(ms): %f\n", visensor_imudata_pack.num, dt_imu);
+				imu_num_pre = (int)visensor_imudata_pack.num;
+				
+// 				cout<<"acc: "<<visensor_imudata_pack.ax<<" "<<visensor_imudata_pack.ay<<" "<<visensor_imudata_pack.az<<endl;
+// 				cout<<"gyro: "<<visensor_imudata_pack.rx<<" "<<visensor_imudata_pack.ry<<" "<<visensor_imudata_pack.rz<<endl;
+// 				
+// 				float imu_time_cur = visensor_imudata_pack.imu_time;
+// 				float imt_time_dt = imu_time_cur - imu_time_pre;
+// 				cout<<"imu_time_dt: "<<imt_time_dt<<", imu_read_counter: "<<imu_read_counter++<<endl;
+// 				int  imu_packet_length = sizeof(visensor_imudata_pack);
+// 				cout<<"----------------end------------------"<<endl<<endl;
+				
+				counter = 0;
+				
+				time_pre = visensor_imudata_pack.system_time;
+// 				imu_time_pre = imu_time_cur;
 			}
 		}
 		usleep(50);
@@ -141,21 +137,18 @@ int main(int argc, char* argv[])
 	//visensor_save_current_settings();
 
 	int r = visensor_Start_Cameras();
-	if(r<0)
-	{
+	if(r<0){
 		printf("Opening cameras failed...\r\n");
 		return r;
 	}
 	/************************** Start IMU **************************/
 	int fd=visensor_Start_IMU();
-	if(fd<0)
-	{
+	if(fd<0){
 		printf("visensor_open_port error...\r\n");
 		return 0;
 	}
 	printf("visensor_open_port success...\r\n");
 	/************************ ************ ************************/
-
 	usleep(100000);
 
 	//Create img_show thread
@@ -167,12 +160,9 @@ int main(int argc, char* argv[])
 	pthread_t showimu_thread;
 	if(temp = pthread_create(&showimu_thread, NULL, show_imuData, NULL))
 	printf("Failed to create thread show_imuData\r\n");
-
-	
 	
 /**/
-	while(1)
-	{
+	while(1){
 		// Do - Nothing :)
 		//cout<<visensor_get_imu_portname()<<endl;
 		//cout<<"hardware_fps : "<<visensor_get_hardware_fps()<<endl;
@@ -182,12 +172,11 @@ int main(int argc, char* argv[])
 	/* shut-down viewers */
 	close_img_viewer=true;
 	visensor_Close_IMU_viewer=true;
-	if(showimg_thread !=0)
-	{
+	if(showimg_thread !=0){
 		pthread_join(showimg_thread,NULL);
 	}
-	if(showimu_thread !=0)
-	{
+	
+	if(showimu_thread !=0){
 		pthread_join(showimu_thread,NULL);
 	}
 
